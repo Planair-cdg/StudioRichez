@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#111111">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SR Stock">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<title>Studio Richez — Stock</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Archivo+Narrow:wght@400;500;600;700&display=swap');
+:root{
+  --bg:#f7f7f5;--surface:#fff;--surface2:#f2f1ee;--border:#e2dfd9;--border-dark:#c5c2bb;
+  --accent:#111;--accent2:#b8973a;--orange-brand:#f47c00;
+  --text:#111;--text-muted:#777066;--text-dim:#c8c5bf;
+  --green:#16a34a;--green-bg:#f0fdf4;--green-border:#bbf7d0;
+  --orange:#c2410c;--orange-bg:#fff7ed;--orange-border:#fed7aa;
+  --red:#dc2626;--red-bg:#fef2f2;--red-border:#fecaca;
+  --blue:#2563eb;--blue-bg:#eff6ff;--blue-border:#bfdbfe;
+  --nav-h:64px;--safe-bottom:env(safe-area-inset-bottom,0px);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overscroll-behavior:none;}
+body{background:var(--bg);color:var(--text);font-family:'Archivo',sans-serif;overflow:hidden;}
+
+/* ===== APP SHELL ===== */
+.app{display:flex;flex-direction:column;height:100vh;height:100dvh;}
+
+/* ===== TOPBAR ===== */
+.topbar{
+  background:var(--accent);color:#fff;
+  padding:max(env(safe-area-inset-top,0px),12px) 16px 12px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;border-bottom:3px solid var(--orange-brand);
+}
+.topbar-left{display:flex;align-items:center;gap:10px;}
+.menu-btn{background:none;border:none;color:rgba(255,255,255,0.7);font-size:20px;cursor:pointer;padding:4px;line-height:1;}
+.topbar-title{font-size:11px;font-weight:900;letter-spacing:2.5px;text-transform:uppercase;color:#fff;}
+.topbar-right{display:flex;gap:8px;align-items:center;}
+.icon-btn{background:none;border:none;color:rgba(255,255,255,0.7);font-size:18px;cursor:pointer;padding:6px;border-radius:6px;}
+.icon-btn:active{background:rgba(255,255,255,0.1);}
+
+/* ===== DRAWER (sidebar on mobile) ===== */
+.drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;backdrop-filter:blur(2px);}
+.drawer-overlay.open{display:block;}
+.drawer{
+  position:fixed;left:0;top:0;bottom:0;width:280px;
+  background:var(--accent);z-index:201;
+  transform:translateX(-100%);transition:transform .25s ease;
+  display:flex;flex-direction:column;overflow-y:auto;
+  padding-top:max(env(safe-area-inset-top,0px),0px);
+}
+.drawer.open{transform:translateX(0);}
+.drawer-header{padding:20px 18px 16px;border-bottom:1px solid rgba(255,255,255,0.1);}
+.drawer-logo-studio{font-size:11px;font-weight:400;color:rgba(255,255,255,0.5);letter-spacing:2px;text-transform:uppercase;}
+.drawer-logo-richez{font-size:22px;font-weight:900;color:#fff;letter-spacing:1px;text-transform:uppercase;margin-top:1px;}
+.drawer-section{padding:12px 10px 4px;}
+.drawer-label{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,0.2);padding:0 8px;margin-bottom:4px;font-weight:700;}
+.drawer-item{display:flex;align-items:center;gap:10px;padding:11px 10px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;color:rgba(255,255,255,0.5);border:none;background:none;width:100%;text-align:left;transition:all .15s;}
+.drawer-item:active,.drawer-item:hover{background:rgba(255,255,255,0.08);color:#fff;}
+.drawer-item.active{background:rgba(255,255,255,0.12);color:#fff;border-left:3px solid var(--orange-brand);padding-left:7px;}
+.drawer-item .di{font-size:16px;width:20px;text-align:center;}
+.drawer-item .dc{margin-left:auto;background:rgba(255,255,255,0.1);border-radius:10px;padding:2px 8px;font-size:11px;font-family:'Archivo Narrow',sans-serif;font-weight:700;color:rgba(255,255,255,0.6);}
+.cat-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.3);padding:6px 8px 4px;font-weight:700;background:none;border:none;cursor:pointer;}
+.cat-arrow{transition:transform .2s;font-size:13px;font-weight:400;}
+.drawer-footer{margin-top:auto;padding:14px;border-top:1px solid rgba(255,255,255,0.07);}
+.stat-pill{background:rgba(255,255,255,0.05);border-radius:4px;padding:7px 11px;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;color:rgba(255,255,255,0.3);display:flex;justify-content:space-between;margin-bottom:4px;}
+.stat-pill span:last-child{font-family:'Archivo Narrow',sans-serif;font-size:13px;font-weight:700;color:#fff;letter-spacing:0;text-transform:none;}
+
+/* ===== BOTTOM NAV ===== */
+.bottom-nav{
+  display:flex;background:var(--surface);
+  border-top:1px solid var(--border);flex-shrink:0;
+  padding-bottom:var(--safe-bottom);
+}
+.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px;cursor:pointer;border:none;background:none;color:var(--text-muted);transition:color .15s;gap:3px;position:relative;}
+.bnav-item:active{background:var(--surface2);}
+.bnav-item.active{color:var(--accent);}
+.bnav-item.active::after{content:'';position:absolute;top:0;left:20%;right:20%;height:2px;background:var(--orange-brand);border-radius:0 0 2px 2px;}
+.bnav-icon{font-size:20px;line-height:1;}
+.bnav-label{font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;}
+.bnav-badge{position:absolute;top:5px;right:calc(50% - 16px);background:var(--orange-brand);color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px;}
+
+/* ===== CONTENT ===== */
+.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
+.view{display:none;padding:14px;}
+.view.active{display:block;}
+
+/* ===== CATEGORY GRID ===== */
+.category-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.category-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;cursor:pointer;padding:14px 12px 10px;active:background:var(--surface2);transition:background .1s;position:relative;overflow:hidden;}
+.category-card:active{background:var(--surface2);}
+.card-icon{font-size:22px;margin-bottom:6px;}
+.card-title{font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;line-height:1.3;}
+.card-brands{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px;min-height:20px;}
+.card-footer{display:flex;gap:4px;flex-wrap:wrap;}
+.card-count-badge{position:absolute;top:10px;right:10px;font-family:'Archivo Narrow',sans-serif;font-size:10px;font-weight:700;color:var(--text-muted);}
+
+/* ===== BADGES ===== */
+.badge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px;font-family:'Archivo Narrow',sans-serif;}
+.badge-green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
+.badge-orange{background:var(--orange-bg);color:var(--orange);border:1px solid var(--orange-border);}
+.badge-red{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);}
+.badge-grey{background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);}
+.brand-tag{font-size:8px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;background:#fff8ec;border:1px solid #e8d9a8;border-radius:3px;padding:1px 4px;color:var(--accent2);}
+.sd{background:var(--green);}.so{background:var(--orange);}.sp{background:var(--red);}
+.status-dot{width:5px;height:5px;border-radius:50%;display:inline-block;margin-right:3px;}
+.tag-type{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 6px;border-radius:3px;}
+.tag-tournage{background:var(--orange-bg);color:var(--orange);border:1px solid var(--orange-border);}
+.tag-pret{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border);}
+
+/* ===== SECTION HEADER ===== */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.section-title{font-size:10px;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);}
+.back-row{display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+.back-btn{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--text-muted);cursor:pointer;padding:7px 12px;border-radius:8px;border:none;background:var(--surface);border:1px solid var(--border);}
+.back-btn:active{background:var(--surface2);}
+.cat-view-title{font-size:13px;font-weight:900;flex:1;}
+
+/* ===== ITEM CARDS (cat view) ===== */
+.item-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;}
+.item-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;}
+.item-name{font-size:14px;font-weight:700;}
+.item-details{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.item-card-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.status-select{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'Archivo',sans-serif;font-size:12px;font-weight:500;padding:6px 10px;cursor:pointer;outline:none;flex:1;min-width:140px;}
+.status-select:focus{border-color:var(--accent2);}
+.note-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-muted);font-size:11px;font-weight:700;padding:6px 11px;cursor:pointer;font-family:'Archivo',sans-serif;white-space:nowrap;}
+.note-btn.has-note{border-color:var(--accent2);color:var(--accent2);background:#fff8ec;}
+.del-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-dim);font-size:14px;width:34px;height:34px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.del-btn:active{border-color:var(--red);color:var(--red);background:var(--red-bg);}
+.item-meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px;}
+
+/* ===== FILTER BAR ===== */
+.filter-bar{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:8px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.filter-bar::-webkit-scrollbar{display:none;}
+.filter-chip{font-size:11px;font-weight:700;padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.filter-chip.active{border-color:var(--accent2);background:#fff8ec;color:var(--accent2);}
+
+/* ===== FORMS ===== */
+.form-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:12px;}
+.form-card-header{padding:12px 16px;border-bottom:1px solid var(--border);font-size:10px;font-weight:900;letter-spacing:2px;text-transform:uppercase;background:var(--surface2);display:flex;align-items:center;justify-content:space-between;}
+.form-card-body{padding:14px 16px;}
+.form-group{margin-bottom:14px;}
+.form-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;display:block;font-weight:700;}
+.form-input{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-family:'Archivo',sans-serif;font-size:15px;padding:11px 13px;outline:none;transition:border-color .15s;-webkit-appearance:none;}
+.form-input:focus{border-color:var(--accent2);background:var(--surface);}
+.form-select{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-family:'Archivo',sans-serif;font-size:15px;padding:11px 13px;outline:none;cursor:pointer;-webkit-appearance:none;}
+.form-select:focus{border-color:var(--accent2);}
+textarea.form-input{resize:none;min-height:80px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.opt-label{font-size:9px;color:var(--text-dim);margin-left:4px;font-weight:400;letter-spacing:0;text-transform:none;}
+
+/* ===== PRET ITEM LIST ===== */
+.pret-item-row{display:flex;align-items:center;gap:10px;padding:12px 13px;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;transition:all .12s;user-select:none;margin-bottom:6px;}
+.pret-item-row:active{background:var(--surface2);}
+.pret-item-row.selected{border-color:var(--accent2);background:#fff8ec;}
+.pret-item-row.unavailable{opacity:0.35;pointer-events:none;}
+.pret-item-row input[type=checkbox]{accent-color:var(--accent2);width:18px;height:18px;flex-shrink:0;}
+.pret-item-label{flex:1;font-weight:600;}
+.pret-count-bar{background:var(--accent);color:#fff;text-align:center;padding:10px;font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;border-radius:8px;margin-bottom:10px;}
+
+/* ===== SORTIE CARDS ===== */
+.sortie-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px;}
+.sortie-card-header{padding:12px 14px;border-bottom:1px solid var(--border);background:var(--surface2);}
+.sortie-who{font-weight:900;font-size:14px;text-transform:uppercase;letter-spacing:0.5px;}
+.sortie-meta{font-size:11px;color:var(--text-muted);margin-top:3px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.sortie-items{padding:10px 14px;display:flex;flex-wrap:wrap;gap:5px;}
+.sortie-item-chip{font-size:11px;font-weight:600;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 9px;color:var(--text-muted);}
+.sortie-footer{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;}
+
+/* ===== BUTTONS ===== */
+.btn{padding:11px 18px;border-radius:8px;font-size:11px;font-family:'Archivo',sans-serif;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;border:none;transition:all .15s;display:inline-flex;align-items:center;justify-content:center;gap:5px;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:active{background:#333;}
+.btn-gold{background:var(--accent2);color:#fff;}
+.btn-gold:active{background:#a08030;}
+.btn-ghost{background:transparent;color:var(--text);border:1.5px solid var(--border-dark);}
+.btn-ghost:active{background:var(--surface2);}
+.btn-danger{background:var(--red);color:#fff;}
+.btn-full{width:100%;}
+.btn-sm{padding:7px 13px;font-size:10px;}
+.success-msg{display:none;margin-top:11px;padding:11px 14px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:8px;font-size:13px;color:var(--green);font-weight:600;}
+
+/* ===== EMPTY STATE ===== */
+.empty-state{text-align:center;padding:60px 20px;color:var(--text-muted);}
+.empty-state .icon{font-size:40px;margin-bottom:12px;opacity:0.3;}
+.empty-state h3{font-size:12px;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:var(--text);margin-bottom:6px;}
+.empty-state p{font-size:13px;}
+
+/* ===== HISTORIQUE ===== */
+.hist-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;}
+.hist-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+.hist-who{font-weight:800;font-size:13px;text-transform:uppercase;}
+.hist-date{font-size:10px;color:var(--text-muted);font-family:'Archivo Narrow',sans-serif;font-weight:700;}
+.hist-items{font-size:11px;color:var(--text-muted);margin-top:4px;line-height:1.5;}
+
+/* ===== MODAL ===== */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);backdrop-filter:blur(4px);z-index:300;align-items:flex-end;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border-radius:16px 16px 0 0;width:100%;max-width:600px;overflow:hidden;max-height:90vh;display:flex;flex-direction:column;padding-bottom:var(--safe-bottom);}
+.modal-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2);flex-shrink:0;}
+.modal-title{font-size:10px;font-weight:900;letter-spacing:2px;text-transform:uppercase;}
+.modal-close{background:none;border:none;color:var(--text-muted);font-size:22px;cursor:pointer;line-height:1;padding:2px;}
+.modal-body{padding:18px 20px;overflow-y:auto;}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:10px;background:var(--surface2);flex-shrink:0;}
+
+/* ===== SYNC ===== */
+#sync-status{position:fixed;bottom:calc(var(--nav-h) + var(--safe-bottom) + 8px);left:50%;transform:translateX(-50%);font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:7px 14px;border-radius:20px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:500;white-space:nowrap;}
+#sync-status.show{opacity:1;}
+#sync-status.saving{background:#fff8ec;color:var(--accent2);border:1px solid #e8d9a8;}
+#sync-status.saved{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
+#sync-status.error{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);}
+
+/* ===== LOGIN ===== */
+#login-screen{position:fixed;inset:0;background:#f7f7f5;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;padding:20px;}
+.login-top-bar{position:absolute;top:0;left:0;right:0;height:4px;background:var(--orange-brand);}
+.login-box{width:100%;max-width:320px;text-align:center;}
+.login-brand{margin-bottom:40px;}
+.login-brand-studio{font-size:16px;font-weight:400;color:#111;letter-spacing:2px;text-transform:uppercase;display:block;}
+.login-brand-richez{font-size:36px;font-weight:900;color:#111;letter-spacing:1px;text-transform:uppercase;display:block;line-height:1;}
+.login-headline{font-size:14px;font-weight:600;color:#888;margin-bottom:32px;letter-spacing:0.5px;}
+.login-label{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#bbb;text-align:left;margin-bottom:8px;display:block;}
+.login-input{width:100%;background:#fff;border:2px solid #e8e5e0;border-radius:12px;color:#111;font-family:'Archivo',sans-serif;font-size:32px;font-weight:800;padding:16px;outline:none;letter-spacing:12px;text-align:center;margin-bottom:14px;transition:border-color .15s;-webkit-appearance:none;}
+.login-input:focus{border-color:#111;}
+.login-input::placeholder{letter-spacing:4px;color:#ddd;font-size:20px;font-weight:400;}
+.login-btn{width:100%;background:#111;border:none;border-radius:12px;color:#fff;font-family:'Archivo',sans-serif;font-size:12px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;padding:16px;cursor:pointer;}
+.login-btn:active{background:var(--orange-brand);}
+.login-error{margin-top:12px;font-size:12px;color:#e53e3e;font-weight:700;min-height:18px;}
+.login-loading{margin-top:14px;font-size:10px;color:#aaa;letter-spacing:2px;text-transform:uppercase;}
+.login-footer{position:absolute;bottom:max(20px,env(safe-area-inset-bottom,20px));font-size:9px;color:#ccc;letter-spacing:2px;text-transform:uppercase;}
+
+/* ===== SEARCH ===== */
+.search-bar{display:flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:10px 13px;margin-bottom:12px;}
+.search-bar input{background:none;border:none;outline:none;color:var(--text);font-family:'Archivo',sans-serif;font-size:14px;width:100%;}
+.search-bar input::placeholder{color:var(--text-dim);}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-thumb{background:var(--border-dark);border-radius:2px;}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-top-bar"></div>
+  <div class="login-box">
+    <div class="login-brand">
+      <span class="login-brand-studio">Studio</span>
+      <span class="login-brand-richez">Richez</span>
+    </div>
+    <div class="login-headline">Gestion du stock</div>
+    <label class="login-label">Code d'accès</label>
+    <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4"
+      class="login-input" id="login-pwd" placeholder="••••"
+      onkeydown="if(event.key==='Enter')checkLogin()"
+      oninput="if(this.value.length===4)checkLogin()">
+    <button class="login-btn" onclick="checkLogin()">Accéder</button>
+    <div class="login-error" id="login-error"></div>
+    <div class="login-loading" id="login-loading" style="display:none;">Chargement…</div>
+  </div>
+  <div class="login-footer">studiorichez.fr</div>
+</div>
+
+<!-- SYNC -->
+<div id="sync-status"></div>
+
+<!-- DRAWER OVERLAY -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+
+<!-- DRAWER -->
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div class="drawer-logo-studio">Studio</div>
+    <div class="drawer-logo-richez">Richez</div>
+  </div>
+  <div class="drawer-section">
+    <div class="drawer-label">Navigation</div>
+    <button class="drawer-item active" onclick="navTo('inventaire')"><span class="di">📦</span>Inventaire<span class="dc" id="dc-total">—</span></button>
+    <button class="drawer-item" onclick="navTo('pret')"><span class="di">🎬</span>Nouvelle sortie</button>
+    <button class="drawer-item" onclick="navTo('sorties')"><span class="di">🔄</span>Sorties actives<span class="dc" id="dc-sorties">0</span></button>
+    <button class="drawer-item" onclick="navTo('historique')"><span class="di">🕒</span>Historique</button>
+  </div>
+  <div class="drawer-section">
+    <button class="cat-toggle" onclick="toggleCat()">
+      <span>Catégories</span><span class="cat-arrow" id="cat-arrow">›</span>
+    </button>
+    <div id="cat-list" style="display:none;">
+      <button class="drawer-item" onclick="navCat('CAMERA DSLR')"><span class="di">📷</span>Caméras</button>
+      <button class="drawer-item" onclick="navCat('OBJECTIFS')"><span class="di">🔭</span>Objectifs</button>
+      <button class="drawer-item" onclick="navCat('LUMIERES ET FLASH')"><span class="di">💡</span>Lumières</button>
+      <button class="drawer-item" onclick="navCat('STAB ET MACHINERIE')"><span class="di">🎥</span>Stabilisation</button>
+      <button class="drawer-item" onclick="navCat('TREPIEDS ET TÊTES')"><span class="di">🦯</span>Trépieds</button>
+      <button class="drawer-item" onclick="navCat('MATERIEL SON')"><span class="di">🎙️</span>Son</button>
+      <button class="drawer-item" onclick="navCat('ACCESSOIRE VIDEO')"><span class="di">🎞️</span>Accessoires</button>
+      <button class="drawer-item" onclick="navCat('ALIMENTATION')"><span class="di">🔋</span>Alimentation</button>
+      <button class="drawer-item" onclick="navCat('STOCKAGE')"><span class="di">💾</span>Stockage</button>
+      <button class="drawer-item" onclick="navCat('GRIP')"><span class="di">🔧</span>Grip</button>
+      <button class="drawer-item" onclick="navCat('DRONE')"><span class="di">🚁</span>Drone</button>
+      <button class="drawer-item" onclick="navCat('REGIE')"><span class="di">🖥️</span>Régie</button>
+    </div>
+  </div>
+  <div class="drawer-footer">
+    <div class="stat-pill"><span>Disponible</span><span id="stat-dispo">—</span></div>
+    <div class="stat-pill"><span>Sorti</span><span id="stat-sorti">0</span></div>
+    <div class="stat-pill"><span>En panne</span><span id="stat-panne">0</span></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app" style="display:none;">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="menu-btn" onclick="openDrawer()">☰</button>
+      <div class="topbar-title" id="page-title">Inventaire</div>
+    </div>
+    <div class="topbar-right">
+      <button class="icon-btn" id="btn-add" onclick="navTo('ajouter')" style="display:none;" title="Ajouter">＋</button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- INVENTAIRE -->
+    <div class="view active" id="view-inventaire">
+      <div class="category-grid" id="category-grid"></div>
+    </div>
+
+    <!-- CATEGORIE -->
+    <div class="view" id="view-categorie">
+      <div class="back-row">
+        <button class="back-btn" onclick="navTo('inventaire')">← Retour</button>
+        <div class="cat-view-title" id="cat-title">—</div>
+        <button class="btn btn-gold btn-sm" onclick="openAddInCat()">＋</button>
+      </div>
+      <div class="filter-bar" id="brand-filter-bar" style="display:none;"></div>
+      <div id="cat-items"></div>
+    </div>
+
+    <!-- AJOUTER -->
+    <div class="view" id="view-ajouter">
+      <div class="form-card">
+        <div class="form-card-header">Nouveau matériel</div>
+        <div class="form-card-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Catégorie</label>
+              <select class="form-select" id="add-cat" onchange="onAddCatChange()">
+                <option value="">Sélectionner</option>
+                <option value="CAMERA DSLR">📷 Caméras</option>
+                <option value="OBJECTIFS">🔭 Objectifs</option>
+                <option value="LUMIERES ET FLASH">💡 Lumières</option>
+                <option value="STAB ET MACHINERIE">🎥 Stabilisation</option>
+                <option value="TREPIEDS ET TÊTES">🦯 Trépieds</option>
+                <option value="MATERIEL SON">🎙️ Son</option>
+                <option value="ACCESSOIRE VIDEO">🎞️ Accessoires</option>
+                <option value="ALIMENTATION">🔋 Alimentation</option>
+                <option value="STOCKAGE">💾 Stockage</option>
+                <option value="GRIP">🔧 Grip</option>
+                <option value="DRONE">🚁 Drone</option>
+                <option value="REGIE">🖥️ Régie</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Marque</label>
+              <input type="text" class="form-input" id="add-marque" placeholder="Sony, DJI…" list="marque-dl" autocomplete="off">
+              <datalist id="marque-dl"></datalist>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nom / Modèle</label>
+            <input type="text" class="form-input" id="add-nom" placeholder="Ex: A7 IV, Ronin RS3…">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Détails <span class="opt-label">(optionnel)</span></label>
+            <input type="text" class="form-input" id="add-details" placeholder="Monture, caractéristiques…">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Pièces</label>
+              <input type="number" class="form-input" id="add-pieces" value="1" min="1">
+            </div>
+            <div class="form-group">
+              <label class="form-label">État</label>
+              <select class="form-select" id="add-etat">
+                <option value="dispo">✅ Disponible</option>
+                <option value="controle">🔍 À contrôler</option>
+                <option value="panne">🔴 En panne</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Note <span class="opt-label">(optionnel)</span></label>
+            <textarea class="form-input" id="add-note" placeholder="Observations…"></textarea>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-primary" style="flex:1;" onclick="ajouterMateriel()">Ajouter →</button>
+            <button class="btn btn-ghost" onclick="resetAddForm()">Reset</button>
+          </div>
+          <div class="success-msg" id="add-success"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SORTIE -->
+    <div class="view" id="view-pret">
+      <div class="form-card">
+        <div class="form-card-header">Détails de la sortie</div>
+        <div class="form-card-body">
+          <div class="form-group">
+            <label class="form-label">Type</label>
+            <select class="form-select" id="pret-type" onchange="toggleTournageFields()">
+              <option value="pret">📤 Prêt — personne / entité</option>
+              <option value="tournage">🎬 Tournage extérieur</option>
+            </select>
+          </div>
+          <div class="form-group" id="field-contact">
+            <label class="form-label">Personne / Entité</label>
+            <input type="text" class="form-input" id="pret-contact" placeholder="Nom, société…">
+          </div>
+          <div class="form-group" id="field-lieu" style="display:none;">
+            <label class="form-label">Lieu</label>
+            <input type="text" class="form-input" id="pret-lieu" placeholder="Ville, adresse…">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Départ</label>
+              <input type="date" class="form-input" id="pret-depart">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Retour <span class="opt-label">(opt.)</span></label>
+              <input type="date" class="form-input" id="pret-retour">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Notes <span class="opt-label">(opt.)</span></label>
+            <textarea class="form-input" id="pret-notes" placeholder="Infos complémentaires…"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="form-card">
+        <div class="form-card-header">Matériel <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;" id="pret-count">0 sélectionné(s)</span></div>
+        <div class="form-card-body" style="padding-top:10px;">
+          <div class="filter-bar" id="pret-filter-bar"></div>
+          <div id="pret-item-list"></div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="validerSortie()" style="margin-top:4px;padding:15px;">Confirmer la sortie →</button>
+    </div>
+
+    <!-- SORTIES ACTIVES -->
+    <div class="view" id="view-sorties">
+      <div id="sorties-container">
+        <div class="empty-state"><div class="icon">🎬</div><h3>Aucune sortie active</h3><p>Tout le matériel est disponible.</p></div>
+      </div>
+    </div>
+
+    <!-- HISTORIQUE -->
+    <div class="view" id="view-historique">
+      <div id="historique-container">
+        <div class="empty-state"><div class="icon">🕒</div><h3>Aucun historique</h3><p>Les sorties passées apparaîtront ici.</p></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <button class="bnav-item active" onclick="navTo('inventaire')" id="bn-inventaire">
+      <span class="bnav-icon">📦</span><span class="bnav-label">Stock</span>
+    </button>
+    <button class="bnav-item" onclick="navTo('pret')" id="bn-pret">
+      <span class="bnav-icon">🎬</span><span class="bnav-label">Sortie</span>
+    </button>
+    <button class="bnav-item" onclick="navTo('sorties')" id="bn-sorties">
+      <span class="bnav-icon">🔄</span><span class="bnav-label">Actives</span>
+      <span class="bnav-badge" id="bnav-badge" style="display:none;">0</span>
+    </button>
+    <button class="bnav-item" onclick="navTo('historique')" id="bn-historique">
+      <span class="bnav-icon">🕒</span><span class="bnav-label">Historique</span>
+    </button>
+  </div>
+
+</div>
+
+<!-- MODAL NOTE -->
+<div class="modal-overlay" id="modal-note">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Note — <span id="modal-note-item">—</span></div><button class="modal-close" onclick="closeModal('modal-note')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Libellé d'état</label><input type="text" class="form-input" id="modal-libelle" placeholder="Ex : câble manquant…"></div>
+      <div class="form-group"><label class="form-label">Note</label><textarea class="form-input" id="modal-note-text" placeholder="Détails…"></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" style="flex:1;" onclick="closeModal('modal-note')">Annuler</button><button class="btn btn-primary" style="flex:1;" onclick="saveNote()">Enregistrer</button></div>
+  </div>
+</div>
+
+<!-- MODAL RETOUR -->
+<div class="modal-overlay" id="modal-retour">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Retour matériel</div><button class="modal-close" onclick="closeModal('modal-retour')">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Retour de : <strong id="retour-who" style="color:var(--text);">—</strong></p>
+      <div class="form-group"><label class="form-label">État au retour</label>
+        <select class="form-select" id="retour-etat">
+          <option value="bon">✅ Bon état</option>
+          <option value="endommage">⚠️ Légèrement endommagé</option>
+          <option value="panne">❌ En panne</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Remarques <span class="opt-label">(opt.)</span></label><textarea class="form-input" id="retour-notes" placeholder="Observations…"></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" style="flex:1;" onclick="closeModal('modal-retour')">Annuler</button><button class="btn btn-primary" style="flex:1;" onclick="confirmerRetour()">Confirmer</button></div>
+  </div>
+</div>
+
+<!-- MODAL SUPPRIMER -->
+<div class="modal-overlay" id="modal-delete">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Supprimer</div><button class="modal-close" onclick="closeModal('modal-delete')">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:14px;margin-bottom:6px;">Supprimer <strong id="delete-item-name">—</strong> ?</p>
+      <p style="font-size:12px;color:var(--text-muted);">Cette action est irréversible.</p>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" style="flex:1;" onclick="closeModal('modal-delete')">Annuler</button><button class="btn btn-danger" style="flex:1;" onclick="confirmerSuppression()">Supprimer</button></div>
+  </div>
+</div>
+
+<script>
+const CAT_META={'CAMERA DSLR':{icon:'📷'},'OBJECTIFS':{icon:'🔭'},'LUMIERES ET FLASH':{icon:'💡'},'STAB ET MACHINERIE':{icon:'🎥'},'TREPIEDS ET TÊTES':{icon:'🦯'},'MATERIEL SON':{icon:'🎙️'},'ACCESSOIRE VIDEO':{icon:'🎞️'},'ALIMENTATION':{icon:'🔋'},'STOCKAGE':{icon:'💾'},'GRIP':{icon:'🔧'},'DRONE':{icon:'🚁'},'REGIE':{icon:'🖥️'}};
+const SUPABASE_URL='https://trxjthvjjojycwpxwptw.supabase.co';
+const SUPABASE_KEY='sb_publishable_08NwdMR47_I581CN6rPBOA_a4rP62RP';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const APP_PASSWORD='0048';
+
+let nid=1;
+const mk=(cat,nom,det,pcs,marq)=>({id:nid++,cat,nom,details:det,pieces:pcs,marque:marq||'—',etat:'dispo',libelle:'',note:''});
+let items=[
+  mk('CAMERA DSLR','A7III','Hybride plein format',2,'Sony'),mk('CAMERA DSLR','Osmo Pocket','Caméra stabilisée compacte',1,'DJI'),
+  mk('OBJECTIFS','Adaptateur Canon → Sony','Monture E',1,'K&F'),mk('OBJECTIFS','Adaptateur Canon → Sony','Monture E',1,'Metabones'),
+  mk('OBJECTIFS','Filtre ND Variable','70mm',1,'K&F'),mk('OBJECTIFS','Filtre ND Variable','77mm',1,'Peter McKinnon'),
+  mk('OBJECTIFS','Poches filtres','Génériques',2,'—'),mk('OBJECTIFS','50mm F1.8 STM','Monture EF',1,'Canon'),
+  mk('OBJECTIFS','75-300mm F4-5.6','Monture EF',1,'Canon'),mk('OBJECTIFS','15mm F1.7','Monture MFT',1,'DJI'),
+  mk('OBJECTIFS','28-60mm F4-5.6','Monture E',1,'Sony'),mk('OBJECTIFS','10-18mm F4','Monture E',1,'Sony'),
+  mk('OBJECTIFS','Zeiss 24-70mm F4','Monture E',1,'Sony'),mk('OBJECTIFS','85mm F1.8','Monture E',1,'Sony'),
+  mk('OBJECTIFS','50mm F1.8','Monture E',1,'Sony'),mk('OBJECTIFS','55mm F1.8','Monture E',1,'Sony'),
+  mk('OBJECTIFS','28-60mm F3.5-5.6','Monture E',1,'Sony'),mk('OBJECTIFS','Adaptateur PL → Sony','Monture E',1,'—'),
+  mk('OBJECTIFS','Polarisant 77mm','Zeiss',1,'Zeiss'),mk('OBJECTIFS','20mm F1.8','Monture E',1,'Samyang'),mk('OBJECTIFS','35mm F1.4','Monture E',1,'Sigma'),
+  mk('LUMIERES ET FLASH','Flash SK400','Flash studio',3,'Godox'),mk('LUMIERES ET FLASH','Flash AD100 Pro','Flash Cobra',1,'Godox'),
+  mk('LUMIERES ET FLASH','Softbox rectangle','',3,'Godox'),mk('LUMIERES ET FLASH','Parapluie argenté','',2,'Godox'),
+  mk('LUMIERES ET FLASH','Parapluie blanc','',2,'Godox'),mk('LUMIERES ET FLASH','Stripbox','',1,'Godox'),
+  mk('LUMIERES ET FLASH','Télécommande flash universelle','',1,'Godox'),mk('LUMIERES ET FLASH','Nova p300C','LED bi-color',1,'Aputure'),
+  mk('LUMIERES ET FLASH','MC Minettes avec valises','',3,'Aputure'),mk('LUMIERES ET FLASH','Softbox Nova p300C','',1,'Aputure'),
+  mk('LUMIERES ET FLASH','Boule chinoise','Lanterne LED',1,'Aputure'),mk('LUMIERES ET FLASH','Sacoche rangement','',1,'Nanlite'),
+  mk('LUMIERES ET FLASH','Protection Pavotube Waterproof','',1,'Nanlite'),mk('LUMIERES ET FLASH','Réflecteurs 5 faces','',1,'Neewer'),
+  mk('LUMIERES ET FLASH','Télécommande Flash','Monture E',1,'Sony'),mk('LUMIERES ET FLASH','Bol Beauté','Photo',1,'—'),
+  mk('LUMIERES ET FLASH','Mandarines','',4,'—'),mk('LUMIERES ET FLASH','Gélatine Bleue','Rouleau',1,'—'),
+  mk('LUMIERES ET FLASH','Gélatine Orange','Rouleau',1,'—'),mk('LUMIERES ET FLASH','Rouleau Diffusion','',2,'—'),
+  mk('STAB ET MACHINERIE','Ronin S2','Gimbal full équipé',1,'DJI'),mk('STAB ET MACHINERIE','Ronin S1','Gimbal avec barre',1,'DJI'),
+  mk('STAB ET MACHINERIE','Boite accessoires Ronin S2','',1,'DJI'),mk('STAB ET MACHINERIE','Follow Focus Crane 2','Nucleus N',1,'Zhiyun'),
+  mk('STAB ET MACHINERIE','Stabilisateur téléphone','',1,'Zhiyun'),mk('STAB ET MACHINERIE','Stabilisateur téléphone','',1,'Feiyutech'),
+  mk('STAB ET MACHINERIE','Tête slider Flextilt','',1,'Edelkrone'),mk('STAB ET MACHINERIE','Rail','',1,'Hague'),mk('STAB ET MACHINERIE','Socle','',1,'Poraim'),
+  mk('TREPIEDS ET TÊTES','Tête Aktiv 75mm','Tête fluide',1,'Sachtler'),mk('TREPIEDS ET TÊTES','Trépied vidéo','',1,'Manfrotto'),
+  mk('TREPIEDS ET TÊTES','Nano Clamp','',1,'Manfrotto'),mk('TREPIEDS ET TÊTES','Trépied léger Atlas','',1,'Vanguard'),mk('TREPIEDS ET TÊTES','Trépied léger','',1,'Neewer'),
+  mk('MATERIEL SON','Videomic','Câbles + bonnette',1,'Røde'),mk('MATERIEL SON','Videomic Pro+','',1,'Røde'),
+  mk('MATERIEL SON','Mic HF','',1,'Røde'),mk('MATERIEL SON','Bonnettes','2 rondes + 1 longue grise',3,'Røde'),
+  mk('MATERIEL SON','Micro HF Lark 1','',1,'Hollyland'),mk('MATERIEL SON','Micro Kit U40/P40','INCOMPLET',1,'Sony'),
+  mk('MATERIEL SON','Micro KMR81i','',1,'Sennheiser'),mk('MATERIEL SON','Micro HF DJI 1','',1,'DJI'),
+  mk('MATERIEL SON','Perche son','À réparer',1,'Boya'),mk('MATERIEL SON','Windjammer','',1,'Boya'),
+  mk('MATERIEL SON','Câble XLR','5m environ',1,'—'),mk('MATERIEL SON','XLR M/F court','< 1m',1,'—'),
+  mk('MATERIEL SON','XLR M/F 1m','',1,'—'),mk('MATERIEL SON','Support antichoc perche','',1,'—'),
+  mk('MATERIEL SON','Support perche Girafe','',1,'—'),mk('MATERIEL SON','Connecteurs micro Jack/Jack','',2,'—'),mk('MATERIEL SON','Écouteurs','',1,'—'),
+  mk('ACCESSOIRE VIDEO','Ninja 5','Moniteur enregistreur + valise',1,'Atomos'),mk('ACCESSOIRE VIDEO','Module SDI FX6','',1,'Atomos'),
+  mk('ACCESSOIRE VIDEO','Mattebox 5,65"','',1,'Tilta'),mk('ACCESSOIRE VIDEO','Cage Sony A7III','',1,'SmallRig'),
+  mk('ACCESSOIRE VIDEO','Cage GH5','',1,'SmallRig'),mk('ACCESSOIRE VIDEO','Transmetteur HF Mars 400','',1,'Hollyland'),
+  mk('ACCESSOIRE VIDEO','Video Assist BMC 5"','',1,'Blackmagic'),mk('ACCESSOIRE VIDEO','Mini bras magic Osmo','',1,'DJI'),
+  mk('ACCESSOIRE VIDEO','Extension batterie Osmo','',1,'DJI'),mk('ACCESSOIRE VIDEO','Support Osmo','',1,'DJI'),
+  mk('ACCESSOIRE VIDEO','Trépied Osmo','',1,'DJI'),mk('ACCESSOIRE VIDEO','Ventouse Osmo','',1,'DJI'),
+  mk('ACCESSOIRE VIDEO','Prompteur','',1,'—'),mk('ACCESSOIRE VIDEO','Câble Tether','5 ou 10m',1,'—'),mk('ACCESSOIRE VIDEO','Multitool trépieds','',1,'—'),
+  mk('ALIMENTATION','Batterie NPFZ100','',6,'Sony'),mk('ALIMENTATION','Batterie BPU60','',1,'Sony'),mk('ALIMENTATION','Chargeur Batterie NPFZ100','',1,'Sony'),
+  mk('ALIMENTATION','Chargeur Canon','Point and Shoot',1,'Canon'),mk('ALIMENTATION','Chargeurs piles','Duracell + EBL',2,'Duracell/EBL'),
+  mk('ALIMENTATION','Batterie NPF970','',1,'—'),mk('ALIMENTATION','Chargeur Batterie NPF','Sans alim',1,'—'),
+  mk('ALIMENTATION','Batterie externe 5000mAh','',1,'—'),mk('ALIMENTATION','Câbles CHoko','',2,'—'),
+  mk('ALIMENTATION','Adaptateur prise anglaise','',1,'—'),mk('ALIMENTATION','Allume-cigare','',1,'—'),
+  mk('ALIMENTATION','Dtape à double pin','',1,'—'),mk('ALIMENTATION','Chargeur USB-C','',1,'—'),
+  mk('ALIMENTATION','Piles AA rechargeables','',20,'—'),mk('ALIMENTATION','Testeur de pile','',1,'—'),
+  mk('STOCKAGE','Micro SD 64G V30','',1,'SanDisk'),mk('STOCKAGE','Micro SD 32G HC1','',1,'SanDisk'),
+  mk('STOCKAGE','Micro SD 1Go','',1,'SanDisk'),mk('STOCKAGE','SDXC V30 128Go','',1,'SanDisk'),
+  mk('STOCKAGE','Micro SD 32G','',1,'PNY'),mk('STOCKAGE','Micro SD 64G','',1,'PNY'),mk('STOCKAGE','Micro SD 16Go','',1,'PNY'),
+  mk('STOCKAGE','SD U1 C10 16Go','',1,'Lexar'),mk('STOCKAGE','SDXC V90 64Go','',1,'Lexar'),
+  mk('STOCKAGE','V60 128Go','',1,'Sony'),mk('STOCKAGE','CFExpress 160Go','',1,'Sony'),mk('STOCKAGE','Lecteur CF Express','',1,'Sony'),
+  mk('STOCKAGE','SDXC U3 C10 64Go','',1,'Essentiel B'),mk('STOCKAGE','Adaptateur Micro SD','',7,'—'),
+  mk('GRIP','Trépieds lumières','',6,'Jenbei'),mk('GRIP','Nano Clamp','',1,'Manfrotto'),
+  mk('GRIP','Barres traverses','Fonds & grid',4,'—'),mk('GRIP','Trépieds légers','',3,'—'),
+  mk('GRIP','C Stand','Pieds lourds',1,'—'),mk('GRIP',"Bras d'extension métallique",'',1,'—'),
+  mk('GRIP','Balle de tennis','',11,'—'),mk('GRIP','Gueuse','',1,'—'),mk('GRIP','Douille vide lumière','',4,'—'),
+  mk('GRIP','Gaffeur','Fin vert / fin blanc',2,'—'),mk('GRIP','Pinces Machino','',7,'—'),
+  mk('GRIP','Rouleau Velcro','',2,'—'),mk('GRIP','Ventouse voiture','',1,'—'),mk('GRIP','Pinces Crocos','',11,'—'),mk('GRIP','Clamp','',1,'—'),
+  mk('DRONE','FPV','Complet',1,'DJI'),mk('DRONE','Télécommande Inspire','',1,'DJI'),mk('DRONE','Télécommande FPV Taranis X7','',1,'FrSky'),
+  mk('REGIE','Ecran','',1,'HP'),mk('REGIE','Clavier','',1,'Apple'),mk('REGIE','Talkie Walkie','Avec 6 micros',4,'Motorola'),
+  mk('REGIE','Souris','',1,'Usman'),mk('REGIE','Prolong','2 noir 1 rouge 1 blanc',4,'—'),
+  mk('REGIE','Scotch électrique jaune','',10,'—'),mk('REGIE','Masterlock','',1,'—'),mk('REGIE','Mousquetons','',11,'—'),mk('REGIE',"Clé étoile",'',1,'—'),
+];
+
+let sorties=[],historique=[];
+let currentModalItemId=null,currentRetourIdx=null;
+let selectedPretIds=new Set(),currentPretCatFilter='all';
+let currentCat=null,currentBrandFilter='all',pendingDeleteId=null;
+let catOpen=false;
+
+function catItems(cat){return items.filter(i=>i.cat===cat);}
+function catBrands(cat){return[...new Set(catItems(cat).map(i=>i.marque).filter(m=>m&&m!=='—'))].sort();}
+function allBrands(){return[...new Set(items.map(i=>i.marque).filter(m=>m&&m!=='—'))].sort();}
+function fmtDate(d){if(!d)return'—';const[y,m,day]=d.split('-');return`${day}/${m}/${y}`;}
+
+// DRAWER
+function openDrawer(){document.getElementById('drawer').classList.add('open');document.getElementById('drawer-overlay').classList.add('open');}
+function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('drawer-overlay').classList.remove('open');}
+function toggleCat(){catOpen=!catOpen;document.getElementById('cat-list').style.display=catOpen?'block':'none';document.getElementById('cat-arrow').style.transform=catOpen?'rotate(90deg)':'';}
+
+// NAV
+const TITLES={inventaire:'Inventaire',ajouter:'Ajouter',pret:'Nouvelle sortie',sorties:'Sorties actives',historique:'Historique'};
+function navTo(v){
+  closeDrawer();
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.getElementById('page-title').textContent=TITLES[v]||v;
+  document.getElementById('btn-add').style.display=v==='inventaire'?'':'none';
+  document.querySelectorAll('.bnav-item').forEach(x=>x.classList.remove('active'));
+  const bn=document.getElementById('bn-'+v);if(bn)bn.classList.add('active');
+  document.querySelectorAll('.drawer-item').forEach(x=>x.classList.remove('active'));
+  if(v==='inventaire')renderInventaire();
+  if(v==='pret')renderPretView();
+  if(v==='sorties')renderSorties();
+  if(v==='historique')renderHistorique();
+  if(v==='ajouter')populateMarqueDL();
+  updateStats();
+}
+function navCat(cat){
+  closeDrawer();currentCat=cat;currentBrandFilter='all';
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  document.getElementById('view-categorie').classList.add('active');
+  document.getElementById('cat-title').textContent=CAT_META[cat].icon+' '+cat;
+  document.getElementById('page-title').textContent=cat;
+  document.getElementById('btn-add').style.display='none';
+  renderCatItems(cat);
+}
+
+// INVENTAIRE
+function renderInventaire(){
+  const g=document.getElementById('category-grid');g.innerHTML='';
+  Object.entries(CAT_META).forEach(([cat,m])=>{
+    const ci=catItems(cat),sc={dispo:0,sorti:0,panne:0};
+    ci.forEach(i=>{if(sc[i.etat]!==undefined)sc[i.etat]++;});
+    const marqs=[...new Set(ci.map(i=>i.marque).filter(x=>x&&x!=='—'))].slice(0,4);
+    const mHtml=marqs.map(x=>`<span class="brand-tag">${x}</span>`).join('')||'';
+    g.innerHTML+=`<div class="category-card" onclick="navCat('${cat}')">
+      <div class="card-count-badge">${ci.length}</div>
+      <div class="card-icon">${m.icon}</div>
+      <div class="card-title">${cat}</div>
+      <div class="card-brands">${mHtml}</div>
+      <div class="card-footer">
+        ${sc.dispo>0?`<span class="badge badge-green"><span class="status-dot sd"></span>${sc.dispo}</span>`:''}
+        ${sc.sorti>0?`<span class="badge badge-orange"><span class="status-dot so"></span>${sc.sorti}</span>`:''}
+        ${sc.panne>0?`<span class="badge badge-red"><span class="status-dot sp"></span>${sc.panne}</span>`:''}
+      </div></div>`;
+  });
+}
+
+// CAT ITEMS
+function renderCatItems(cat){
+  const bfb=document.getElementById('brand-filter-bar');
+  const brands=catBrands(cat);
+  if(brands.length>0){
+    bfb.style.display='flex';
+    bfb.innerHTML=`<span class="filter-chip ${currentBrandFilter==='all'?'active':''}" onclick="setCatBrand('${cat}','all',this)">Toutes</span>`+
+      brands.map(b=>`<span class="filter-chip ${currentBrandFilter===b?'active':''}" onclick="setCatBrand('${cat}','${b.replace(/'/g,"\\'")}',this)">${b}</span>`).join('');
+  } else bfb.style.display='none';
+  const container=document.getElementById('cat-items');container.innerHTML='';
+  const filtered=catItems(cat).filter(i=>currentBrandFilter==='all'||i.marque===currentBrandFilter);
+  if(!filtered.length){container.innerHTML='<div class="empty-state"><div class="icon">📦</div><h3>Vide</h3><p>Aucun matériel dans cette catégorie.</p></div>';return;}
+  filtered.forEach(item=>{
+    const etats=[{v:'dispo',l:'✅ Disponible'},{v:'sorti',l:'📤 Sorti'},{v:'panne',l:'🔴 En panne'},{v:'controle',l:'🔍 À contrôler'},{v:'entretien',l:'🔧 En entretien'}];
+    const opts=etats.map(e=>`<option value="${e.v}"${item.etat===e.v?' selected':''}>${e.l}</option>`).join('');
+    const hasNote=item.libelle||item.note;
+    const mTag=item.marque&&item.marque!=='—'?`<span class="brand-tag">${item.marque}</span>`:'';
+    const pieces=item.pieces>1?`<span class="badge badge-grey">${item.pieces} pcs</span>`:'';
+    container.innerHTML+=`<div class="item-card">
+      <div class="item-card-top">
+        <div><div class="item-name">${item.nom}</div>${item.details?`<div class="item-details">${item.details}</div>`:''}</div>
+        <button class="del-btn" onclick="openDeleteModal(${item.id})">✕</button>
+      </div>
+      <div class="item-meta">${mTag}${pieces}</div>
+      <div class="item-card-actions">
+        <select class="status-select" onchange="setEtat(${item.id},this.value)">${opts}</select>
+        <button class="note-btn${hasNote?' has-note':''}" onclick="openNoteModal(${item.id})">${hasNote?'📝':'+ Note'}</button>
+      </div>
+    </div>`;
+  });
+}
+function setCatBrand(cat,brand,el){currentBrandFilter=brand;renderCatItems(cat);}
+function setEtat(id,val){const i=items.find(x=>x.id===id);if(i){i.etat=val;updateStats();dbSaveMateriel(i);}}
+
+// ADD
+function populateMarqueDL(){const dl=document.getElementById('marque-dl');dl.innerHTML=allBrands().map(b=>`<option value="${b}">`).join('');}
+function onAddCatChange(){const cat=document.getElementById('add-cat').value;const dl=document.getElementById('marque-dl');const brands=[...new Set([...(cat?catBrands(cat):[]),...allBrands()])].sort();dl.innerHTML=brands.map(b=>`<option value="${b}">`).join('');}
+function ajouterMateriel(){
+  const cat=document.getElementById('add-cat').value,nom=document.getElementById('add-nom').value.trim();
+  const marque=document.getElementById('add-marque').value.trim()||'—',details=document.getElementById('add-details').value.trim();
+  const pieces=parseInt(document.getElementById('add-pieces').value)||1,etat=document.getElementById('add-etat').value;
+  const note=document.getElementById('add-note').value.trim();
+  if(!cat){alert('Sélectionnez une catégorie.');return;}if(!nom){alert('Saisissez un nom.');return;}
+  const newItem={id:nid++,cat,nom,details,pieces,marque,etat,libelle:'',note};
+  items.push(newItem);updateStats();renderInventaire();dbSaveMateriel(newItem);
+  const msg=document.getElementById('add-success');msg.textContent=`✅ "${nom}" ajouté.`;msg.style.display='block';
+  setTimeout(()=>msg.style.display='none',3000);
+  document.getElementById('add-nom').value='';document.getElementById('add-marque').value='';
+  document.getElementById('add-details').value='';document.getElementById('add-pieces').value='1';document.getElementById('add-note').value='';
+}
+function resetAddForm(){['add-cat','add-nom','add-marque','add-details','add-note'].forEach(id=>document.getElementById(id).value='');document.getElementById('add-pieces').value='1';document.getElementById('add-success').style.display='none';}
+function openAddInCat(){navTo('ajouter');if(currentCat){document.getElementById('add-cat').value=currentCat;onAddCatChange();}}
+
+// DELETE
+function openDeleteModal(id){pendingDeleteId=id;const i=items.find(x=>x.id===id);document.getElementById('delete-item-name').textContent=(i.marque!=='—'?i.marque+' ':'')+i.nom;document.getElementById('modal-delete').classList.add('open');}
+function confirmerSuppression(){dbDeleteMateriel(pendingDeleteId);items=items.filter(i=>i.id!==pendingDeleteId);closeModal('modal-delete');if(currentCat)renderCatItems(currentCat);updateStats();renderInventaire();}
+
+// NOTES
+function openNoteModal(id){currentModalItemId=id;const i=items.find(x=>x.id===id);document.getElementById('modal-note-item').textContent=i.nom;document.getElementById('modal-libelle').value=i.libelle||'';document.getElementById('modal-note-text').value=i.note||'';document.getElementById('modal-note').classList.add('open');}
+function saveNote(){const i=items.find(x=>x.id===currentModalItemId);if(i){i.libelle=document.getElementById('modal-libelle').value;i.note=document.getElementById('modal-note-text').value;dbSaveMateriel(i);}closeModal('modal-note');if(currentCat)renderCatItems(currentCat);}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+// PRET
+function renderPretView(){selectedPretIds.clear();currentPretCatFilter='all';renderPretFilterBar();renderPretItems();updatePretCount();document.getElementById('pret-depart').value=new Date().toISOString().split('T')[0];document.getElementById('pret-retour').value='';}
+function renderPretFilterBar(){const bar=document.getElementById('pret-filter-bar');bar.innerHTML=`<span class="filter-chip active" onclick="setPretFilter('all',this)">Tout</span>`+Object.entries(CAT_META).map(([cat,m])=>`<span class="filter-chip" onclick="setPretFilter('${cat}',this)">${m.icon}</span>`).join('');}
+function setPretFilter(cat,el){document.querySelectorAll('#pret-filter-bar .filter-chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');currentPretCatFilter=cat;renderPretItems();}
+function renderPretItems(){
+  const list=document.getElementById('pret-item-list');list.innerHTML='';
+  const fil=currentPretCatFilter==='all'?items:items.filter(i=>i.cat===currentPretCatFilter);
+  fil.forEach(item=>{
+    const sel=selectedPretIds.has(item.id),avail=item.etat==='dispo';
+    const mHtml=item.marque&&item.marque!=='—'?`<span class="brand-tag">${item.marque}</span>`:'';
+    list.innerHTML+=`<div class="pret-item-row${sel?' selected':''}${!avail?' unavailable':''}" onclick="${avail||sel?`togglePretItem(${item.id})`:''}">
+      <input type="checkbox"${sel?' checked':''}${!avail?' disabled':''} readonly>
+      <span class="pret-item-label">${item.nom} ${mHtml}</span>
+      <span style="font-size:12px;color:var(--text-dim);">${CAT_META[item.cat]?.icon}</span>
+      <span class="badge ${avail?'badge-green':'badge-red'}">${avail?'dispo':item.etat}</span>
+    </div>`;
+  });
+}
+function togglePretItem(id){const i=items.find(x=>x.id===id);if(!i||(i.etat!=='dispo'&&!selectedPretIds.has(id)))return;selectedPretIds.has(id)?selectedPretIds.delete(id):selectedPretIds.add(id);renderPretItems();updatePretCount();}
+function updatePretCount(){document.getElementById('pret-count').textContent=selectedPretIds.size+' sélectionné(s)';}
+function toggleTournageFields(){const t=document.getElementById('pret-type').value;document.getElementById('field-contact').style.display=t==='pret'?'':'none';document.getElementById('field-lieu').style.display=t==='tournage'?'':'none';}
+function validerSortie(){
+  if(!selectedPretIds.size){alert('Sélectionnez au moins un équipement.');return;}
+  const type=document.getElementById('pret-type').value,contact=document.getElementById('pret-contact').value,lieu=document.getElementById('pret-lieu').value;
+  const depart=document.getElementById('pret-depart').value,retour=document.getElementById('pret-retour').value,notes=document.getElementById('pret-notes').value;
+  if(type==='pret'&&!contact){alert('Indiquez un contact.');return;}if(type==='tournage'&&!lieu){alert('Indiquez un lieu.');return;}
+  selectedPretIds.forEach(id=>{const i=items.find(x=>x.id===id);if(i){i.etat='sorti';dbSaveMateriel(i);}});
+  const s={id:Date.now(),type,contact:type==='pret'?contact:lieu,depart,retour,notes,itemIds:[...selectedPretIds],dateCreation:new Date().toLocaleDateString('fr-FR')};
+  sorties.push(s);dbSaveSortie(s);selectedPretIds.clear();updateStats();navTo('sorties');
+}
+
+// SORTIES
+function renderSorties(){
+  const c=document.getElementById('sorties-container');
+  if(!sorties.length){c.innerHTML='<div class="empty-state"><div class="icon">🎬</div><h3>Aucune sortie active</h3><p>Tout le matériel est disponible.</p></div>';return;}
+  c.innerHTML=sorties.map((s,i)=>{
+    const si=items.filter(x=>s.itemIds.includes(x.id)),over=s.retour&&new Date(s.retour)<new Date();
+    return`<div class="sortie-card">
+      <div class="sortie-card-header">
+        <div class="sortie-who">${s.contact}</div>
+        <div class="sortie-meta">
+          <span class="tag-type ${s.type==='tournage'?'tag-tournage':'tag-pret'}">${s.type==='tournage'?'🎬 Tournage':'📤 Prêt'}</span>
+          ${fmtDate(s.depart)}${s.retour?' → '+fmtDate(s.retour):''}
+          ${over?'<span class="badge badge-red">⚠ Retard</span>':''}
+          <span class="badge badge-grey">${s.itemIds.length} item(s)</span>
+        </div>
+      </div>
+      <div class="sortie-items">${si.map(x=>`<span class="sortie-item-chip">${x.marque!=='—'?x.marque+' ':''}${x.nom}</span>`).join('')}</div>
+      ${s.notes?`<div style="padding:0 14px 8px;font-size:11px;color:var(--text-muted);">💬 ${s.notes}</div>`:''}
+      <div class="sortie-footer"><button class="btn btn-primary btn-sm btn-full" onclick="openRetourModal(${i})">✅ Enregistrer le retour</button></div>
+    </div>`;
+  }).join('');
+}
+function openRetourModal(idx){currentRetourIdx=idx;document.getElementById('retour-who').textContent=sorties[idx].contact;document.getElementById('retour-notes').value='';document.getElementById('modal-retour').classList.add('open');}
+function confirmerRetour(){
+  const s=sorties[currentRetourIdx],etat=document.getElementById('retour-etat').value,notes=document.getElementById('retour-notes').value,dateRetour=new Date().toLocaleDateString('fr-FR');
+  s.itemIds.forEach(id=>{const i=items.find(x=>x.id===id);if(i){if(etat==='bon')i.etat='dispo';else if(etat==='panne')i.etat='panne';else{i.etat='controle';if(notes)i.note=notes;}dbSaveMateriel(i);}});
+  dbArchiveSortie(s.id,dateRetour,etat,notes);historique.unshift({...s,dateRetour,etatRetour:etat,notesRetour:notes});sorties.splice(currentRetourIdx,1);closeModal('modal-retour');updateStats();renderSorties();
+}
+
+// HISTORIQUE
+function renderHistorique(){
+  const c=document.getElementById('historique-container');
+  if(!historique.length){c.innerHTML='<div class="empty-state"><div class="icon">🕒</div><h3>Aucun historique</h3><p>Les sorties passées apparaîtront ici.</p></div>';return;}
+  c.innerHTML=historique.map(h=>{
+    const names=items.filter(i=>h.itemIds.includes(i.id)).map(i=>(i.marque!=='—'?i.marque+' ':'')+i.nom).join(', ');
+    return`<div class="hist-item">
+      <div class="hist-top"><div class="hist-who">${h.contact}</div><div class="hist-date">${h.dateCreation} → ${h.dateRetour||'—'}</div></div>
+      <div style="margin:4px 0;"><span class="tag-type ${h.type==='tournage'?'tag-tournage':'tag-pret'}">${h.type==='tournage'?'🎬 Tournage':'📤 Prêt'}</span></div>
+      <div class="hist-items">${names||'—'}</div>
+    </div>`;
+  }).join('');
+}
+
+// STATS
+function updateStats(){
+  let d=0,s=0,p=0;items.forEach(i=>{if(i.etat==='dispo')d++;else if(i.etat==='sorti')s++;else if(i.etat==='panne')p++;});
+  document.getElementById('stat-dispo').textContent=d;document.getElementById('stat-sorti').textContent=s;document.getElementById('stat-panne').textContent=p;
+  document.getElementById('dc-total').textContent=items.length;document.getElementById('dc-sorties').textContent=sorties.length;
+  const badge=document.getElementById('bnav-badge');if(sorties.length>0){badge.textContent=sorties.length;badge.style.display='flex';}else badge.style.display='none';
+}
+
+// SUPABASE
+let syncTimer=null;
+function showSync(state,msg){const el=document.getElementById('sync-status');el.className='show '+state;el.textContent=msg;clearTimeout(syncTimer);if(state==='saved')syncTimer=setTimeout(()=>el.classList.remove('show'),2500);}
+async function dbSaveMateriel(item){showSync('saving','Sauvegarde…');const{error}=await sb.from('materiel').upsert({id:item.id,cat:item.cat,nom:item.nom,details:item.details,pieces:item.pieces,marque:item.marque,etat:item.etat,libelle:item.libelle,note:item.note});if(error){showSync('error','Erreur');console.error(error);}else showSync('saved','✓ Sauvegardé');}
+async function dbDeleteMateriel(id){showSync('saving','Suppression…');const{error}=await sb.from('materiel').delete().eq('id',id);if(error){showSync('error','Erreur');console.error(error);}else showSync('saved','✓ Supprimé');}
+async function dbSaveSortie(sortie){showSync('saving','Sauvegarde…');const{error}=await sb.from('sorties').upsert({id:sortie.id,type:sortie.type,contact:sortie.contact,depart:sortie.depart,retour:sortie.retour||null,notes:sortie.notes,item_ids:sortie.itemIds,date_creation:sortie.dateCreation,archivee:false});if(error){showSync('error','Erreur');console.error(error);}else showSync('saved','✓ Sauvegardé');}
+async function dbArchiveSortie(id,dateRetour,etatRetour,notesRetour){const{error}=await sb.from('sorties').update({archivee:true,date_retour:dateRetour,etat_retour:etatRetour,notes_retour:notesRetour}).eq('id',id);if(error)console.error(error);}
+async function dbSaveAllMateriel(){showSync('saving','Import initial…');const rows=items.map(i=>({id:i.id,cat:i.cat,nom:i.nom,details:i.details,pieces:i.pieces,marque:i.marque,etat:i.etat,libelle:i.libelle,note:i.note}));const{error}=await sb.from('materiel').upsert(rows);if(error){showSync('error','Erreur import');console.error(error);}else showSync('saved','✓ Stock importé');}
+
+// LOGIN
+function checkLogin(){
+  const pwd=document.getElementById('login-pwd').value,err=document.getElementById('login-error');
+  if(pwd===APP_PASSWORD){err.textContent='';document.getElementById('login-loading').style.display='block';initApp();}
+  else{err.textContent='Code incorrect.';document.getElementById('login-pwd').value='';document.getElementById('login-pwd').focus();}
+}
+
+// INIT
+async function initApp(){
+  const{data:matData,error:matErr}=await sb.from('materiel').select('*');
+  if(!matErr&&matData&&matData.length>0){items=matData.map(r=>({id:r.id,cat:r.cat,nom:r.nom,details:r.details||'',pieces:r.pieces,marque:r.marque||'—',etat:r.etat||'dispo',libelle:r.libelle||'',note:r.note||''}));nid=Math.max(...items.map(i=>i.id))+1;}
+  else if(!matErr)await dbSaveAllMateriel();
+  const{data:sortData,error:sortErr}=await sb.from('sorties').select('*').eq('archivee',false);
+  if(!sortErr&&sortData)sorties=sortData.map(r=>({id:r.id,type:r.type,contact:r.contact,depart:r.depart,retour:r.retour||'',notes:r.notes||'',itemIds:r.item_ids||[],dateCreation:r.date_creation}));
+  const{data:histData,error:histErr}=await sb.from('sorties').select('*').eq('archivee',true).order('id',{ascending:false});
+  if(!histErr&&histData)historique=histData.map(r=>({id:r.id,type:r.type,contact:r.contact,depart:r.depart,retour:r.retour||'',notes:r.notes||'',itemIds:r.item_ids||[],dateCreation:r.date_creation,dateRetour:r.date_retour||'',etatRetour:r.etat_retour||'',notesRetour:r.notes_retour||''}));
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  renderInventaire();updateStats();
+}
+
+document.getElementById('login-pwd').focus();
+</script>
+</body>
+</html>
